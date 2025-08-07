@@ -1,0 +1,58 @@
+{
+  "name": "leader",
+  "version": "1.0.0",
+  "description": "Real Estate Lead Platform - Subscription-based pre-foreclosure lead generation",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "scrape": "node scripts/scraper.js",
+    "skip-trace": "node scripts/skip-trace.js",
+    "score-leads": "node scripts/score-leads.js",
+    "send-weekly-report": "node scripts/send-weekly-report.js",
+    "send-sms": "node scripts/send-sms.js"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@supabase/supabase-js": "^2.38.0",
+    "@supabase/ssr": "^0.1.0",
+    "twilio": "^4.19.0",
+    "@sendgrid/mail": "^7.7.0",
+    "puppeteer": "^22.8.2",
+    "cheerio": "^1.0.0-rc.12",
+    "axios": "^1.6.0",
+    "node-cron": "^3.0.3",
+    "airtable": "^0.12.0",
+    "crypto-js": "^4.2.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.9.7",
+    "multer": "^2.0.0-rc.1",
+    "sharp": "^0.32.6",
+    "date-fns": "^2.30.0",
+    "lodash": "^4.17.21",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/lodash": "^4.14.202",
+    "@types/uuid": "^9.0.7",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.0.0",
+    "typescript": "^5.2.0",
+    "tailwindcss": "^3.3.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+} 
