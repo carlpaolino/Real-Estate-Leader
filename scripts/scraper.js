@@ -38,7 +38,7 @@ class ForeclosureScraper {
       await this.page.goto(config.url, { waitUntil: 'networkidle2' });
       
       // Wait for the page to load
-      await this.page.waitForTimeout(2000);
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Extract foreclosure data based on county-specific selectors
       const foreclosureData = await this.page.evaluate((selectors) => {

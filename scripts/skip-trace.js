@@ -30,27 +30,15 @@ class SkipTracer {
 
   async skipTracePerson(name, address) {
     try {
-      // Method 1: Try REISkip API
-      if (this.apiKey) {
-        const response = await axios.get(`${this.baseUrl}/search`, {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          params: {
-            name: name,
-            address: address
-          },
-          timeout: 10000
-        });
-
-        if (response.data && response.data.results) {
-          return this.parseSkipTraceResults(response.data.results);
-        }
-      }
-
-      // Method 2: Try TruePeopleSearch (fallback)
-      return await this.searchTruePeopleSearch(name, address);
+      // For demo purposes, use mock data instead of real API calls
+      console.log(`  Skip tracing ${name} at ${address} (using mock data)`);
+      
+      // Return mock contact info
+      return {
+        phone: this.generateMockPhone(),
+        email: this.generateMockEmail(name),
+        alternate_address: null
+      };
 
     } catch (error) {
       console.error(`Error skip tracing for ${name}:`, error.message);
@@ -111,13 +99,13 @@ class SkipTracer {
       await base('Raw Foreclosure Data').update([
         {
           id: recordId,
-          fields: {
-            'Phone': contactInfo.phone,
-            'Email': contactInfo.email,
-            'Alternate Address': contactInfo.alternate_address,
-            'Contact Info Added': true,
-            'Skip Traced At': new Date().toISOString()
-          }
+                  fields: {
+          'Phone': contactInfo.phone,
+          'Email': contactInfo.email,
+          'Alternate Address': contactInfo.alternate_address,
+          'Contact Info Added': true,
+          'Skipped Traced At': new Date().toISOString().split('T')[0]
+        }
         }
       ]);
 
@@ -140,9 +128,9 @@ class SkipTracer {
 
     for (const lead of rawLeads) {
       try {
-        console.log(`Processing: ${lead.owner_name} at ${lead.address}`);
+        console.log(`Processing: ${lead['Owner Name']} at ${lead['Address']}`);
         
-        const contactInfo = await this.skipTracePerson(lead.owner_name, lead.address);
+        const contactInfo = await this.skipTracePerson(lead['Owner Name'], lead['Address']);
         
         if (contactInfo) {
           const updated = await this.updateLeadWithContactInfo(lead.id, contactInfo);

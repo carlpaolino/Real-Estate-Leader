@@ -15,8 +15,8 @@ class SMSOutreach {
 
   async getNewLeads() {
     try {
-      const records = await base('Raw Foreclosure Data').select({
-        filterByFormula: '{Contact Info Added} = TRUE() AND {SMS Sent} = FALSE() AND {Phone} != ""',
+      const records = await base('Processed Leads').select({
+        filterByFormula: '{Campaign Status} = "Not Started" AND {Phone} != "" AND {Status} = "New"',
         maxRecords: 50
       }).all();
 
@@ -108,13 +108,13 @@ class SMSOutreach {
 
   async updateLeadStatus(recordId, smsSent, messageId) {
     try {
-      await base('Raw Foreclosure Data').update([
+      await base('Processed Leads').update([
         {
           id: recordId,
           fields: {
-            'SMS Sent': smsSent,
-            'SMS Message ID': messageId,
-            'SMS Sent At': new Date().toISOString()
+            'Campaign Status': smsSent ? 'SMS Sent' : 'Failed',
+            'Last Contact Date': new Date().toISOString(),
+            'SMS Message ID': messageId
           }
         }
       ]);

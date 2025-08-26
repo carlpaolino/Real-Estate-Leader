@@ -13,7 +13,7 @@ class LeadScorer {
   async getProcessedLeads() {
     try {
       const records = await base('Raw Foreclosure Data').select({
-        filterByFormula: '{Contact Info Added} = TRUE() AND {Scored} = FALSE()',
+        filterByFormula: 'AND({Contact Info Added} = TRUE(), {Scored} = FALSE())',
         maxRecords: 100
       }).all();
 
@@ -99,11 +99,12 @@ class LeadScorer {
       
       // Test if the URL returns a valid image
       const response = await axios.head(url);
-      if (response.status === 200) {
+      if (response.status === 200 && response.headers['content-type']?.includes('image/')) {
         return url;
       }
     } catch (error) {
-      console.error(`Error getting street view for ${address}:`, error.message);
+      // Don't log error for missing street view - it's common
+      console.log(`  No street view available for ${address}`);
     }
     
     return null;
@@ -186,7 +187,7 @@ class LeadScorer {
             'Ownership Years': propertyData.ownership_years,
             'Street View URL': streetViewUrl,
             'Scored': true,
-            'Scored At': new Date().toISOString()
+            'Scored At': new Date().toISOString().split('T')[0]
           }
         }
       ]);
@@ -210,16 +211,16 @@ class LeadScorer {
 
     for (const lead of leads) {
       try {
-        console.log(`Scoring: ${lead.owner_name} at ${lead.address}`);
+        console.log(`Scoring: ${lead['Owner Name']} at ${lead['Address']}`);
         
         // Get property data
-        const propertyData = await this.getPropertyData(lead.address);
+        const propertyData = await this.getPropertyData(lead['Address']);
         
         // Calculate score
         const scoreData = this.calculateScore(lead, propertyData);
         
         // Get street view URL
-        const streetViewUrl = await this.getStreetViewUrl(lead.address);
+        const streetViewUrl = await this.getStreetViewUrl(lead['Address']);
         
         // Update record
         const updated = await this.updateLeadWithScore(
