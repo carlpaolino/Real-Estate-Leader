@@ -34,10 +34,8 @@
     "next": "^14.0.0",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.7",
-    "puppeteer": "^22.8.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "sharp": "^0.32.6",
     "twilio": "^4.19.0",
     "uuid": "^9.0.1"
   },
