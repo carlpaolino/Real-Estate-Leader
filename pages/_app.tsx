@@ -3,10 +3,10 @@ import { createBrowserClient } from '@supabase/ssr'
 import { createContext, useContext, useEffect, useState } from 'react'
 import '../styles/globals.css'
 
-// Create Supabase client
+// Create Supabase client with safety checks
 const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
 // Create context for Supabase client
@@ -25,20 +25,35 @@ export default function App({ Component, pageProps }: AppProps) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Check if Supabase is properly configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.warn('Supabase environment variables not found');
+      setLoading(false);
+      return;
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setLoading(false)
+    }).catch(error => {
+      console.error('Error getting session:', error);
+      setLoading(false);
     })
 
     // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
+    try {
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session)
+      })
 
-    return () => subscription.unsubscribe()
+      return () => subscription.unsubscribe()
+    } catch (error) {
+      console.error('Error setting up auth listener:', error);
+      setLoading(false);
+    }
   }, [])
 
   if (loading) {
