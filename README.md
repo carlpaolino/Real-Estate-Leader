@@ -17,6 +17,7 @@ Leader is designed to:
 - Node.js 18+ 
 - npm or yarn
 - Supabase account
+- Stripe account (for subscriptions)
 - Twilio account (for SMS)
 - SendGrid account (for emails)
 - Airtable account (for data storage)
@@ -51,6 +52,14 @@ Leader is designed to:
    SENDGRID_API_KEY=your_sendgrid_api_key
    SENDGRID_FROM_EMAIL=your_verified_sender_email
 
+   # Stripe (Subscriptions)
+   STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+   STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+   STRIPE_BASIC_PRICE_ID=price_xxxxx
+   STRIPE_PRO_PRICE_ID=price_xxxxx
+   STRIPE_ENTERPRISE_PRICE_ID=price_xxxxx
+
    # Airtable
    AIRTABLE_API_KEY=your_airtable_api_key
    AIRTABLE_BASE_ID=your_airtable_base_id
@@ -69,17 +78,20 @@ Leader is designed to:
    ```
 
 4. **Set up the database**
-   ```bash
-   # Run database migrations
-   npm run db:migrate
-   ```
+   - Follow the instructions in `docs/SUPABASE_SETUP.md`
+   - Make sure to add Stripe columns to the users table (see `docs/STRIPE_SETUP.md`)
 
-5. **Start the development server**
+5. **Set up Stripe subscriptions**
+   - Follow the complete guide in `docs/STRIPE_SETUP.md`
+   - Create products and prices in Stripe dashboard
+   - Configure webhooks for local and production
+
+6. **Start the development server**
    ```bash
    npm run dev
    ```
 
-6. **Open your browser**
+7. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## 📁 Project Structure
@@ -212,6 +224,17 @@ docker run -p 3000:3000 leader
 - `POST /api/leads/:id/status` - Update lead status
 - `POST /api/outreach/sms` - Send SMS
 - `GET /api/analytics` - Get user analytics
+
+### Stripe Subscription Endpoints
+- `POST /api/stripe/create-checkout-session` - Create checkout session for subscription
+- `POST /api/stripe/create-portal-session` - Create customer portal session
+- `POST /api/stripe/webhook` - Handle Stripe webhook events
+- `GET /api/stripe/subscription-status` - Get user's subscription status
+
+### Pages
+- `/subscription` - Subscription plans and pricing page
+- `/subscription/success` - Success page after subscription
+- `/dashboard` - User dashboard with subscription status
 
 ## 🤝 Contributing
 

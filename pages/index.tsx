@@ -22,9 +22,14 @@ export default function Home({ session }: { session: any }) {
               </div>
               <div className="flex items-center space-x-4">
                 {session ? (
-                  <Link href="/dashboard" className="btn-primary">
-                    Dashboard
-                  </Link>
+                  <>
+                    <Link href="/subscription" className="btn-secondary">
+                      Subscription
+                    </Link>
+                    <Link href="/dashboard" className="btn-primary">
+                      Dashboard
+                    </Link>
+                  </>
                 ) : (
                   <>
                     <Link href="/auth/login" className="btn-secondary">

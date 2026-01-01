@@ -90,6 +90,8 @@ CREATE TABLE IF NOT EXISTS users (
   subscription_status TEXT DEFAULT 'trial',
   subscription_plan TEXT DEFAULT 'basic',
   subscription_end_date TIMESTAMP WITH TIME ZONE,
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

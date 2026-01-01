@@ -5,8 +5,10 @@ import Head from 'next/head'
 import LeadCard from '@/components/LeadCard'
 import DashboardStats from '@/components/DashboardStats'
 import LeadFilters from '@/components/LeadFilters'
+import SubscriptionStatus from '@/components/SubscriptionStatus'
 import { Lead, LeadFilters as LeadFiltersType } from '@/types/lead'
 import { ensureUserProfile } from '@/lib/auth'
+import Link from 'next/link'
 
 export default function Dashboard({ session }: { session: any }) {
   const supabase = useSupabase()
@@ -86,6 +88,9 @@ export default function Dashboard({ session }: { session: any }) {
                 <h1 className="text-2xl font-bold text-primary-600">Leader</h1>
               </div>
               <div className="flex items-center space-x-4">
+                <Link href="/subscription" className="text-sm text-gray-600 hover:text-gray-900">
+                  Subscription
+                </Link>
                 <span className="text-sm text-gray-600">
                   {session.user?.email}
                 </span>
@@ -109,6 +114,9 @@ export default function Dashboard({ session }: { session: any }) {
               Manage your leads and track your progress
             </p>
           </div>
+
+          {/* Subscription Status */}
+          <SubscriptionStatus userId={session.user.id} />
 
           {/* Stats */}
           <DashboardStats leads={leads} />
