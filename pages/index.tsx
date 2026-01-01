@@ -1,35 +1,7 @@
-import { useState } from 'react'
-import { useSupabase } from './_app'
 import Head from 'next/head'
 import Link from 'next/link'
 
 export default function Home({ session }: { session: any }) {
-  const supabase = useSupabase()
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setMessage('')
-
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-        },
-      })
-
-      if (error) throw error
-      setMessage('Check your email for the magic link!')
-    } catch (error) {
-      setMessage('Error sending magic link. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <>
@@ -54,7 +26,14 @@ export default function Home({ session }: { session: any }) {
                     Dashboard
                   </Link>
                 ) : (
-                  <button className="btn-secondary">Sign In</button>
+                  <>
+                    <Link href="/auth/login" className="btn-secondary">
+                      Sign In
+                    </Link>
+                    <Link href="/auth/signup" className="btn-primary">
+                      Get Started
+                    </Link>
+                  </>
                 )}
               </div>
             </div>
@@ -77,12 +56,18 @@ export default function Home({ session }: { session: any }) {
                   </p>
                   <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                     <div className="rounded-md shadow">
-                      <Link href="#features" className="btn-primary text-lg px-8 py-3">
-                        Get Started
-                      </Link>
+                      {session ? (
+                        <Link href="/dashboard" className="btn-primary text-lg px-8 py-3">
+                          Go to Dashboard
+                        </Link>
+                      ) : (
+                        <Link href="/auth/signup" className="btn-primary text-lg px-8 py-3">
+                          Get Started
+                        </Link>
+                      )}
                     </div>
                     <div className="mt-3 sm:mt-0 sm:ml-3">
-                      <Link href="#how-it-works" className="btn-secondary text-lg px-8 py-3">
+                      <Link href="#features" className="btn-secondary text-lg px-8 py-3">
                         Learn More
                       </Link>
                     </div>
@@ -163,35 +148,32 @@ export default function Home({ session }: { session: any }) {
         {/* Sign In Section */}
         {!session && (
           <div className="py-12 bg-gray-50">
-            <div className="max-w-md mx-auto">
-              <div className="card p-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Get Started</h2>
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                      Email Address
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="input-field mt-1"
-                      placeholder="Enter your email"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="btn-primary w-full"
-                  >
-                    {loading ? 'Sending...' : 'Send Magic Link'}
-                  </button>
-                </form>
-                {message && (
-                  <p className="mt-4 text-sm text-center text-gray-600">{message}</p>
-                )}
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Ready to Get Started?</h2>
+                <p className="text-lg text-gray-600">
+                  Join Leader today and start receiving curated pre-foreclosure leads
+                </p>
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="card p-8">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">New User?</h3>
+                  <p className="text-gray-600 mb-6">
+                    Create an account to start receiving weekly leads delivered to your inbox.
+                  </p>
+                  <Link href="/auth/signup" className="btn-primary w-full">
+                    Create Account
+                  </Link>
+                </div>
+                <div className="card p-8">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Already Have an Account?</h3>
+                  <p className="text-gray-600 mb-6">
+                    Sign in to access your dashboard and manage your leads.
+                  </p>
+                  <Link href="/auth/login" className="btn-secondary w-full">
+                    Sign In
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

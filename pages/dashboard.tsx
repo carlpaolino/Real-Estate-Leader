@@ -5,14 +5,15 @@ import Head from 'next/head'
 import LeadCard from '@/components/LeadCard'
 import DashboardStats from '@/components/DashboardStats'
 import LeadFilters from '@/components/LeadFilters'
-import { Lead } from '@/types/lead'
+import { Lead, LeadFilters as LeadFiltersType } from '@/types/lead'
+import { ensureUserProfile } from '@/lib/auth'
 
 export default function Dashboard({ session }: { session: any }) {
   const supabase = useSupabase()
   const router = useRouter()
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<LeadFiltersType>({
     status: 'all',
     score: 'all',
     dateRange: 'all'
@@ -20,12 +21,17 @@ export default function Dashboard({ session }: { session: any }) {
 
   useEffect(() => {
     if (!session) {
-      router.push('/')
+      router.push('/auth/login')
       return
     }
 
+    // Ensure user profile exists
+    if (session?.user) {
+      ensureUserProfile(supabase, session.user.id, session.user.email || '').catch(console.error)
+    }
+
     fetchLeads()
-  }, [session, router])
+  }, [session, router, supabase])
 
   const fetchLeads = async () => {
     try {
