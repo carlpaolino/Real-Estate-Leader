@@ -143,3 +143,6 @@ ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
 
 The implementation is complete and ready for testing. Follow the setup guide in `docs/STRIPE_SETUP.md` to configure your Stripe account and start accepting subscriptions!
 
+
+
+
