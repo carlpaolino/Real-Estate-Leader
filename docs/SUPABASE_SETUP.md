@@ -26,7 +26,7 @@ This guide will walk you through connecting your Leader app to Supabase to fix t
 
 ## Step 2: Update Environment Variables
 
-1. **Open your `.env.local` file** in the project root
+1. **Open your `.env` file** in the project root
 
 2. **Update these values** with your actual Supabase credentials:
 
@@ -50,10 +50,10 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_from_supabase_dashboard
 
 2. **Enable Email Provider**
    - Make sure "Email" is enabled
-   - Under "Email Auth", ensure:
+   - Under "Email Auth", for instant login after sign-up (no verification email):
      - ✅ "Enable email signup" is ON
-     - ✅ "Confirm email" - You can turn this OFF for testing, or leave ON for production
-     - ✅ "Secure email change" - Leave ON
+     - ⬜ **"Confirm email"** — turn **OFF** (required for this app’s sign-up flow until you enable verification again)
+     - ✅ "Secure email change" — leave ON
 
 3. **Configure Email Templates** (Optional but recommended)
    - Go to **Authentication** → **Email Templates**
@@ -151,7 +151,7 @@ cd "/Users/carl/Code/Main Side Projects/Real estate bot/Real-Estate-Leader"
 node -e "console.log(process.env.NEXT_PUBLIC_SUPABASE_URL)"
 ```
 
-If this shows `undefined`, your `.env.local` file isn't being read.
+If this shows `undefined`, your `.env` file isn't being read.
 
 ### Check 2: Verify Supabase URL Format
 Your URL should be:
@@ -166,7 +166,7 @@ Create a test file `test-supabase.js`:
 
 ```javascript
 const { createClient } = require('@supabase/supabase-js')
-require('dotenv').config({ path: '.env.local' })
+require('dotenv').config({ path: '.env' })
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -230,8 +230,8 @@ After fixing the connection:
 ### Issue: "Failed to fetch" or Network Error
 **Solutions:**
 - Verify your Supabase URL is correct (check project reference ID)
-- Make sure `.env.local` is in the project root
-- Restart your dev server after changing `.env.local`
+- Make sure `.env` is in the project root
+- Restart your dev server after changing `.env`
 - Check browser console for detailed error messages
 
 ### Issue: "User already registered"

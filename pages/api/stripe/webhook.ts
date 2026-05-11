@@ -126,7 +126,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   // Find user by customer ID
   const { data: user } = await supabase
     .from('users')
-    .select('id')
+    .select('id, subscription_plan')
     .eq('stripe_customer_id', customerId)
     .single()
 
@@ -135,31 +135,50 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     return
   }
 
-  // Determine plan from price ID
-  const priceId = subscription.items.data[0]?.price.id
-  let planId = 'basic'
-  
-  // Map price IDs to plan IDs
-  if (priceId === process.env.STRIPE_BASIC_PRICE_ID) {
-    planId = 'basic'
-  } else if (priceId === process.env.STRIPE_PRO_PRICE_ID) {
-    planId = 'pro'
-  } else if (priceId === process.env.STRIPE_ENTERPRISE_PRICE_ID) {
-    planId = 'enterprise'
+  const stripePriceId = subscription.items.data[0]?.price.id
+
+  // Resolve the plan from the Stripe price id. If we don't recognize the
+  // price id (e.g. a legacy plan, a manually created price, or env vars not
+  // configured), keep the user's existing plan rather than silently
+  // downgrading them to Basic.
+  let planIdResolved: string | null = null
+  if (stripePriceId && stripePriceId === process.env.STRIPE_BASIC_PRICE_ID) {
+    planIdResolved = 'basic'
+  } else if (stripePriceId && stripePriceId === process.env.STRIPE_PRO_PRICE_ID) {
+    planIdResolved = 'pro'
   }
 
-  const status = subscription.status === 'active' ? 'active' : 
-                 subscription.status === 'trialing' ? 'trial' :
-                 subscription.status === 'past_due' ? 'past_due' :
-                 subscription.status === 'canceled' ? 'canceled' : 'inactive'
+  if (!planIdResolved) {
+    console.warn(
+      `Unrecognized Stripe price id ${stripePriceId} for subscription ${subscription.id}; keeping current plan ${user.subscription_plan}`
+    )
+  }
+
+  const status =
+    subscription.status === 'active'
+      ? 'active'
+      : subscription.status === 'trialing'
+        ? 'trialing'
+        : subscription.status === 'past_due'
+          ? 'past_due'
+          : subscription.status === 'canceled' || subscription.status === 'unpaid'
+            ? 'canceled'
+            : subscription.status === 'incomplete' || subscription.status === 'incomplete_expired'
+              ? 'inactive'
+              : 'inactive'
+
+  const update: Record<string, any> = {
+    stripe_subscription_id: subscription.id,
+    subscription_status: status,
+    subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+  }
+  if (planIdResolved) {
+    update.subscription_plan = planIdResolved
+  }
 
   await supabase
     .from('users')
-    .update({
-      stripe_subscription_id: subscription.id,
-      subscription_status: status,
-      subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
-    })
+    .update(update)
     .eq('id', user.id)
 }
 

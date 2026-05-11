@@ -3,6 +3,7 @@ import { useSupabase } from '../_app'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
+import { ensureUserProfile } from '@/lib/auth'
 
 export default function Signup({ session }: { session: any }) {
   const supabase = useSupabase()
@@ -60,7 +61,6 @@ export default function Signup({ session }: { session: any }) {
     }
 
     try {
-      // Sign up the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -74,39 +74,42 @@ export default function Signup({ session }: { session: any }) {
 
       if (authError) throw authError
 
-      // Create user profile in users table
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: authData.user.id,
-            email: authData.user.email || email,
-            full_name: fullName || null,
-            subscription_status: 'trial',
-            subscription_plan: 'basic',
-          })
-
-        if (profileError && profileError.code !== '23505') {
-          console.error('Error creating user profile:', profileError)
-          // Don't throw here - user is created in auth, profile can be created later
-        }
+      if (!authData.user) {
+        throw new Error('Sign up did not return a user. Please try again.')
       }
 
-      setMessage(
-        'Account created successfully! Please check your email to verify your account before signing in.'
-      )
-      setMessageType('success')
-      
-      // Clear form
-      setEmail('')
-      setPassword('')
-      setConfirmPassword('')
-      setFullName('')
+      let session = authData.session
+      if (!session) {
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        if (signInError) {
+          setMessage(
+            'Account may have been created, but automatic sign-in failed. In Supabase: Authentication → Providers → Email — turn **Confirm email** off, then try signing in.'
+          )
+          setMessageType('error')
+          return
+        }
+        session = signInData.session
+      }
 
-      // Redirect to login after 3 seconds
-      setTimeout(() => {
-        router.push('/auth/login')
-      }, 3000)
+      if (!session) {
+        setMessage(
+          'Could not start a session. In Supabase: Authentication → Providers → Email — turn **Confirm email** off for instant login after sign up.'
+        )
+        setMessageType('error')
+        return
+      }
+
+      await ensureUserProfile(
+        supabase,
+        authData.user.id,
+        authData.user.email || email,
+        fullName || undefined
+      )
+
+      router.push('/dashboard')
     } catch (error: any) {
       setMessage(error.message || 'Error creating account. Please try again.')
       setMessageType('error')

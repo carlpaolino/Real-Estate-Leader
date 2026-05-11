@@ -18,7 +18,7 @@ Before deploying, ensure you have:
 
 ### 1.1 Create Environment Variables
 
-Create a `.env.local` file in the root directory with the following variables:
+Create a `.env` file in the root directory with the following variables:
 
 ```env
 # Supabase Configuration

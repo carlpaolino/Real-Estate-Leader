@@ -8,6 +8,13 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE_ID);
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
+// Per-plan weekly lead allowance. Keep in sync with PLANS in lib/stripe.ts.
+const PLAN_WEEKLY_LEADS = {
+  basic: 5,
+  pro: 15,
+};
+const DEFAULT_WEEKLY_LEADS = 5;
+
 class WeeklyReportSender {
   constructor() {
     this.fromEmail = process.env.SENDGRID_FROM_EMAIL;
@@ -15,10 +22,12 @@ class WeeklyReportSender {
 
   async getActiveUsers() {
     try {
+      // Include `trialing` and `past_due` so we don't accidentally cut off
+      // paying customers mid-cycle. `subscription_plan` is needed for limits.
       const { data: users, error } = await supabase
         .from('users')
-        .select('id, email, subscription_status')
-        .eq('subscription_status', 'active');
+        .select('id, email, subscription_status, subscription_plan')
+        .in('subscription_status', ['active', 'trialing']);
 
       if (error) throw error;
       return users || [];
@@ -26,6 +35,11 @@ class WeeklyReportSender {
       console.error('Error fetching active users:', error);
       return [];
     }
+  }
+
+  getWeeklyLeadLimit(user) {
+    const plan = (user && user.subscription_plan) || 'basic';
+    return PLAN_WEEKLY_LEADS[plan] || DEFAULT_WEEKLY_LEADS;
   }
 
   async getCuratedLeads(userId, limit = 5) {
@@ -149,11 +163,12 @@ View all leads: ${process.env.NEXT_PUBLIC_SITE_URL}/dashboard
 
     for (const user of users) {
       try {
-        console.log(`Processing user: ${user.email}`);
-        
-        // Get curated leads for this user
-        const leads = await this.getCuratedLeads(user.id, 5);
-        
+        const weeklyLimit = this.getWeeklyLeadLimit(user);
+        console.log(`Processing user: ${user.email} (plan: ${user.subscription_plan || 'basic'}, limit: ${weeklyLimit})`);
+
+        // Get curated leads for this user, capped to their plan's allowance
+        const leads = await this.getCuratedLeads(user.id, weeklyLimit);
+
         if (leads.length === 0) {
           console.log(`No leads available for ${user.email}`);
           continue;

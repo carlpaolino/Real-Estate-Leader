@@ -24,7 +24,7 @@ The Leader platform uses Supabase Authentication with support for multiple authe
 - Password strength indicator
 - Password confirmation validation
 - Automatic user profile creation in the database
-- Email verification required (handled by Supabase)
+- Redirect to dashboard after sign up when **Confirm email** is disabled in Supabase (see `docs/SUPABASE_SETUP.md`)
 
 ### Reset Password (`/auth/reset-password`)
 - Request password reset via email
@@ -76,10 +76,9 @@ const { session, loading } = useRequireAuth('/auth/login')
 ### Sign Up Flow
 1. User visits `/auth/signup`
 2. Enters email, password, and optional name
-3. System creates Supabase auth user
-4. System creates user profile in `users` table
-5. User receives verification email
-6. After verification, user can log in
+3. System creates Supabase auth user and session (email confirmation disabled in Supabase for instant access)
+4. System ensures a row exists in the `users` table
+5. User is redirected to the dashboard
 
 ### Login Flow (Password)
 1. User visits `/auth/login`

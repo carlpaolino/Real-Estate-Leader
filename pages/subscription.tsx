@@ -5,8 +5,17 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { PLANS, PlanId } from '@/lib/stripe'
 import { loadStripe } from '@stripe/stripe-js'
+import {
+  getSubscribedPlanId,
+  hasActiveStripeSubscription,
+  getPlanRelation,
+} from '@/lib/subscription'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+
+const getPlanName = (planId: PlanId | null) => {
+  return planId ? PLANS[planId].name : null
+}
 
 export default function Subscription({ session }: { session: any }) {
   const supabase = useSupabase()
@@ -122,7 +131,9 @@ export default function Subscription({ session }: { session: any }) {
     return <div>Loading...</div>
   }
 
-  const isActive = subscriptionStatus?.status === 'active' || subscriptionStatus?.status === 'trialing'
+  const hasPaid = hasActiveStripeSubscription(subscriptionStatus)
+  const currentPlanId = getSubscribedPlanId(subscriptionStatus)
+  const currentPlanName = getPlanName(currentPlanId)
 
   return (
     <>
@@ -161,33 +172,47 @@ export default function Subscription({ session }: { session: any }) {
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Select the perfect plan for your real estate investment needs
             </p>
-            {isActive && (
+            {hasPaid && (
               <div className="mt-4 inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full">
                 <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
                 <span className="font-medium">
-                  {subscriptionStatus?.status === 'trialing' ? 'Trial Active' : 'Subscription Active'}
-                  {subscriptionStatus?.plan && ` - ${subscriptionStatus.plan.charAt(0).toUpperCase() + subscriptionStatus.plan.slice(1)} Plan`}
+                  {subscriptionStatus?.status === 'trialing'
+                    ? 'Trial period (Stripe)'
+                    : subscriptionStatus?.status === 'past_due'
+                      ? 'Subscription past due — update payment'
+                      : 'Subscription active'}
+                  {currentPlanName && ` — ${currentPlanName} plan`}
                 </span>
               </div>
             )}
           </div>
 
           {/* Subscription Status Card */}
-          {isActive && (
+          {hasPaid && (
             <div className="mb-8 max-w-2xl mx-auto">
               <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Current Subscription</h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {subscriptionStatus?.plan && (
-                        <span className="capitalize">{subscriptionStatus.plan} Plan</span>
-                      )}
-                      {subscriptionStatus?.endDate && (
-                        <span className="ml-2">
-                          • Renews {new Date(subscriptionStatus.endDate).toLocaleDateString()}
+                    <h3 className="text-lg font-semibold text-gray-900">Your current plan</h3>
+                    <p className="text-base font-medium text-gray-800 mt-1">
+                      {currentPlanName ? `${currentPlanName} plan` : 'Subscribed'}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1 capitalize">
+                      Status:{' '}
+                      <span className="font-medium text-gray-900">
+                        {subscriptionStatus?.status === 'trialing'
+                          ? 'Trialing'
+                          : subscriptionStatus?.status === 'past_due'
+                            ? 'Past due'
+                            : subscriptionStatus?.status === 'active'
+                              ? 'Active'
+                              : subscriptionStatus?.status || '—'}
+                      </span>
+                      {subscriptionStatus?.endDate && subscriptionStatus?.status !== 'canceled' && (
+                        <span className="ml-1">
+                          · Renews {new Date(subscriptionStatus.endDate).toLocaleDateString()}
                         </span>
                       )}
                     </p>
@@ -195,9 +220,9 @@ export default function Subscription({ session }: { session: any }) {
                   <button
                     onClick={handleManageSubscription}
                     disabled={loading}
-                    className="btn-secondary"
+                    className="btn-secondary shrink-0"
                   >
-                    {loading ? 'Loading...' : 'Manage Subscription'}
+                    {loading ? 'Loading...' : 'Manage in Stripe portal'}
                   </button>
                 </div>
               </div>
@@ -207,29 +232,49 @@ export default function Subscription({ session }: { session: any }) {
           {/* Pricing Cards */}
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {Object.entries(PLANS).map(([planId, plan]) => {
-              const isCurrentPlan = subscriptionStatus?.plan === planId && isActive
+              const typedPlanId = planId as PlanId
+              const relation = getPlanRelation(subscriptionStatus, typedPlanId)
+              const isCurrentPlan = relation === 'current'
               const isPopular = planId === 'pro'
+
+              const ctaLabel = (() => {
+                if (relation === 'current') return 'Current Plan'
+                if (relation === 'upgrade') return `Upgrade to ${plan.name}`
+                if (relation === 'downgrade') return `Downgrade to ${plan.name}`
+                return 'Get Started'
+              })()
+
+              const cardRingClass = isCurrentPlan
+                ? 'ring-4 ring-green-500 border-2 border-green-500'
+                : isPopular
+                  ? 'ring-2 ring-primary-500 transform scale-105'
+                  : ''
 
               return (
                 <div
                   key={planId}
-                  className={`relative bg-white rounded-lg shadow-lg overflow-hidden ${
-                    isPopular ? 'ring-2 ring-primary-500 transform scale-105' : ''
-                  } ${isCurrentPlan ? 'ring-2 ring-green-500' : ''}`}
+                  className={`relative bg-white rounded-lg shadow-lg overflow-hidden ${cardRingClass}`}
                 >
-                  {isPopular && (
+                  {isPopular && !isCurrentPlan && (
                     <div className="absolute top-0 right-0 bg-primary-500 text-white px-3 py-1 text-sm font-semibold">
                       Most Popular
                     </div>
                   )}
                   {isCurrentPlan && (
                     <div className="absolute top-0 left-0 bg-green-500 text-white px-3 py-1 text-sm font-semibold">
-                      Current Plan
+                      Your Current Plan
                     </div>
                   )}
 
-                  <div className="p-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                  <div className={`${isCurrentPlan || isPopular ? 'pt-12 px-8 pb-8' : 'p-8'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-2xl font-bold text-gray-900">{plan.name}</h3>
+                      {isCurrentPlan && (
+                        <span className="badge badge-success">
+                          Active
+                        </span>
+                      )}
+                    </div>
                     <p className="text-gray-600 mb-6">{plan.description}</p>
 
                     <div className="mb-6">
@@ -258,15 +303,26 @@ export default function Subscription({ session }: { session: any }) {
 
                     {isCurrentPlan ? (
                       <button
+                        disabled
+                        aria-disabled="true"
+                        className="w-full bg-green-600 text-white font-medium py-2 px-4 rounded-lg cursor-default"
+                      >
+                        {ctaLabel}
+                      </button>
+                    ) : hasPaid ? (
+                      <button
                         onClick={handleManageSubscription}
                         disabled={loading}
-                        className="w-full btn-secondary"
+                        className={`w-full ${
+                          relation === 'upgrade' ? 'btn-primary' : 'btn-secondary'
+                        }`}
+                        title="Plan changes are handled in the Stripe billing portal"
                       >
-                        Manage Subscription
+                        {loading ? 'Loading...' : ctaLabel}
                       </button>
                     ) : (
                       <button
-                        onClick={() => handleCheckout(planId as PlanId)}
+                        onClick={() => handleCheckout(typedPlanId)}
                         disabled={loading || selectedPlan === planId}
                         className={`w-full ${
                           isPopular ? 'btn-primary' : 'btn-secondary'
@@ -274,9 +330,7 @@ export default function Subscription({ session }: { session: any }) {
                       >
                         {loading && selectedPlan === planId
                           ? 'Processing...'
-                          : isActive
-                          ? 'Switch Plan'
-                          : 'Get Started'}
+                          : ctaLabel}
                       </button>
                     )}
                   </div>

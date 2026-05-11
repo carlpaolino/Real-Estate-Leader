@@ -25,9 +25,8 @@ This guide will walk you through setting up Stripe subscriptions for your Leader
 1. **Create Products**
    - Go to Stripe Dashboard → **Products**
    - Click **"Add product"** for each plan:
-     - **Basic Plan**: $29.99/month
-     - **Pro Plan**: $79.99/month
-     - **Enterprise Plan**: $199.99/month
+     - **Basic Plan**: $9.99/month
+     - **Pro Plan**: $29.99/month
 
 2. **Set Up Pricing**
    - For each product, set up a recurring price:
@@ -36,16 +35,15 @@ This guide will walk you through setting up Stripe subscriptions for your Leader
      - Copy the **Price ID** (starts with `price_`)
 
 3. **Update Environment Variables**
-   - Add the Price IDs to your `.env.local`:
+   - Add the Price IDs to your `.env`:
    ```env
    STRIPE_BASIC_PRICE_ID=price_xxxxx
    STRIPE_PRO_PRICE_ID=price_xxxxx
-   STRIPE_ENTERPRISE_PRICE_ID=price_xxxxx
    ```
 
 ## Step 3: Update Environment Variables
 
-Add these to your `.env.local` file:
+Add these to your `.env` file:
 
 ```env
 # Stripe Configuration
@@ -56,7 +54,6 @@ STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
 # Stripe Price IDs (from Step 2)
 STRIPE_BASIC_PRICE_ID=price_xxxxx
 STRIPE_PRO_PRICE_ID=price_xxxxx
-STRIPE_ENTERPRISE_PRICE_ID=price_xxxxx
 ```
 
 ## Step 4: Update Database Schema
@@ -98,7 +95,7 @@ Webhooks are essential for keeping your database in sync with Stripe subscriptio
    stripe listen --forward-to localhost:3000/api/stripe/webhook
    ```
    
-   This will output a webhook signing secret (starts with `whsec_`). Add it to your `.env.local`:
+   This will output a webhook signing secret (starts with `whsec_`). Add it to your `.env`:
    ```env
    STRIPE_WEBHOOK_SECRET=whsec_xxxxx
    ```
@@ -198,6 +195,43 @@ Before going live:
 - Verify `stripe_customer_id` is set in database
 - Check that Stripe Customer Portal is enabled in Stripe Dashboard
 - Verify API keys are correct
+
+## Manually Granting a Plan (Without Stripe Checkout)
+
+Sometimes you want to grant a plan to a user (yourself, a teammate, a comp account) without going through Stripe Checkout. The app determines plan access from these columns on the `users` table:
+
+| Column | Required value to be considered "paid Pro" |
+|---|---|
+| `subscription_status` | `'active'` (or `'trialing'` / `'past_due'`) |
+| `subscription_plan` | `'pro'` (or `'basic'`) |
+| `stripe_subscription_id` | Any non-null value — this is the flag the UI uses to distinguish "real Stripe subscription" from "default trial" |
+| `subscription_end_date` | Optional, but a future date keeps the "Renews on…" UI honest |
+
+Run this in the Supabase SQL Editor, replacing the email:
+
+```sql
+UPDATE users
+SET
+  subscription_status = 'active',
+  subscription_plan = 'pro',
+  stripe_subscription_id = COALESCE(stripe_subscription_id, 'manual_pro_grant'),
+  subscription_end_date = NOW() + INTERVAL '100 years'
+WHERE email = 'your-email@example.com';
+```
+
+After this, the dashboard will show the **Pro** plan and the subscription page will mark Pro as "Your Current Plan". Note: the **Manage in Stripe portal** button will fail for manually granted accounts because there is no real Stripe customer; that's expected.
+
+To revert (downgrade back to no subscription):
+
+```sql
+UPDATE users
+SET
+  subscription_status = 'trial',
+  subscription_plan = 'basic',
+  stripe_subscription_id = NULL,
+  subscription_end_date = NULL
+WHERE email = 'your-email@example.com';
+```
 
 ## Stripe Test Cards
 
