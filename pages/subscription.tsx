@@ -7,6 +7,18 @@ import { PLANS, PlanId } from '@/lib/stripe'
 import { loadStripe } from '@stripe/stripe-js'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+const planIds = Object.keys(PLANS) as PlanId[]
+
+const getPlanId = (plan: string | null | undefined): PlanId | null => {
+  if (!plan) return null
+
+  const normalizedPlan = plan.toLowerCase()
+  return planIds.includes(normalizedPlan as PlanId) ? (normalizedPlan as PlanId) : null
+}
+
+const getPlanName = (planId: PlanId | null) => {
+  return planId ? PLANS[planId].name : null
+}
 
 export default function Subscription({ session }: { session: any }) {
   const supabase = useSupabase()
@@ -123,6 +135,8 @@ export default function Subscription({ session }: { session: any }) {
   }
 
   const isActive = subscriptionStatus?.status === 'active' || subscriptionStatus?.status === 'trialing'
+  const currentPlanId = isActive ? getPlanId(subscriptionStatus?.plan) : null
+  const currentPlanName = getPlanName(currentPlanId)
 
   return (
     <>
@@ -168,7 +182,7 @@ export default function Subscription({ session }: { session: any }) {
                 </svg>
                 <span className="font-medium">
                   {subscriptionStatus?.status === 'trialing' ? 'Trial Active' : 'Subscription Active'}
-                  {subscriptionStatus?.plan && ` - ${subscriptionStatus.plan.charAt(0).toUpperCase() + subscriptionStatus.plan.slice(1)} Plan`}
+                  {currentPlanName && ` - ${currentPlanName} Plan`}
                 </span>
               </div>
             )}
@@ -182,8 +196,8 @@ export default function Subscription({ session }: { session: any }) {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">Current Subscription</h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      {subscriptionStatus?.plan && (
-                        <span className="capitalize">{subscriptionStatus.plan} Plan</span>
+                      {currentPlanName && (
+                        <span>{currentPlanName} Plan</span>
                       )}
                       {subscriptionStatus?.endDate && (
                         <span className="ml-2">
@@ -207,15 +221,19 @@ export default function Subscription({ session }: { session: any }) {
           {/* Pricing Cards */}
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {Object.entries(PLANS).map(([planId, plan]) => {
-              const isCurrentPlan = subscriptionStatus?.plan === planId && isActive
+              const typedPlanId = planId as PlanId
+              const isCurrentPlan = currentPlanId === typedPlanId
               const isPopular = planId === 'pro'
+              const callToAction = isActive
+                ? `Switch to ${plan.name}`
+                : 'Get Started'
 
               return (
                 <div
                   key={planId}
                   className={`relative bg-white rounded-lg shadow-lg overflow-hidden ${
                     isPopular ? 'ring-2 ring-primary-500 transform scale-105' : ''
-                  } ${isCurrentPlan ? 'ring-2 ring-green-500' : ''}`}
+                  } ${isCurrentPlan ? 'ring-4 ring-green-500 border-2 border-green-500' : ''}`}
                 >
                   {isPopular && (
                     <div className="absolute top-0 right-0 bg-primary-500 text-white px-3 py-1 text-sm font-semibold">
@@ -224,12 +242,19 @@ export default function Subscription({ session }: { session: any }) {
                   )}
                   {isCurrentPlan && (
                     <div className="absolute top-0 left-0 bg-green-500 text-white px-3 py-1 text-sm font-semibold">
-                      Current Plan
+                      Your Current Plan
                     </div>
                   )}
 
-                  <div className="p-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                  <div className={`${isCurrentPlan || isPopular ? 'pt-12 px-8 pb-8' : 'p-8'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-2xl font-bold text-gray-900">{plan.name}</h3>
+                      {isCurrentPlan && (
+                        <span className="badge badge-success">
+                          Active
+                        </span>
+                      )}
+                    </div>
                     <p className="text-gray-600 mb-6">{plan.description}</p>
 
                     <div className="mb-6">
@@ -258,15 +283,14 @@ export default function Subscription({ session }: { session: any }) {
 
                     {isCurrentPlan ? (
                       <button
-                        onClick={handleManageSubscription}
-                        disabled={loading}
-                        className="w-full btn-secondary"
+                        disabled
+                        className="w-full bg-green-600 text-white font-medium py-2 px-4 rounded-lg cursor-default"
                       >
-                        Manage Subscription
+                        Current Plan
                       </button>
                     ) : (
                       <button
-                        onClick={() => handleCheckout(planId as PlanId)}
+                        onClick={() => handleCheckout(typedPlanId)}
                         disabled={loading || selectedPlan === planId}
                         className={`w-full ${
                           isPopular ? 'btn-primary' : 'btn-secondary'
@@ -274,9 +298,7 @@ export default function Subscription({ session }: { session: any }) {
                       >
                         {loading && selectedPlan === planId
                           ? 'Processing...'
-                          : isActive
-                          ? 'Switch Plan'
-                          : 'Get Started'}
+                          : callToAction}
                       </button>
                     )}
                   </div>
