@@ -36,7 +36,7 @@ This guide will walk you through setting up Stripe subscriptions for your Leader
      - Copy the **Price ID** (starts with `price_`)
 
 3. **Update Environment Variables**
-   - Add the Price IDs to your `.env.local`:
+   - Add the Price IDs to your `.env`:
    ```env
    STRIPE_BASIC_PRICE_ID=price_xxxxx
    STRIPE_PRO_PRICE_ID=price_xxxxx
@@ -45,7 +45,7 @@ This guide will walk you through setting up Stripe subscriptions for your Leader
 
 ## Step 3: Update Environment Variables
 
-Add these to your `.env.local` file:
+Add these to your `.env` file:
 
 ```env
 # Stripe Configuration
@@ -98,7 +98,7 @@ Webhooks are essential for keeping your database in sync with Stripe subscriptio
    stripe listen --forward-to localhost:3000/api/stripe/webhook
    ```
    
-   This will output a webhook signing secret (starts with `whsec_`). Add it to your `.env.local`:
+   This will output a webhook signing secret (starts with `whsec_`). Add it to your `.env`:
    ```env
    STRIPE_WEBHOOK_SECRET=whsec_xxxxx
    ```

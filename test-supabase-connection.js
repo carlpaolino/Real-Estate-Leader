@@ -1,5 +1,6 @@
 // Quick test script to verify Supabase connection
-require('dotenv').config({ path: '.env.local' })
+const path = require('path')
+require('dotenv').config({ path: path.resolve(__dirname, '.env') })
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -12,7 +13,7 @@ console.log('')
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('❌ Missing environment variables!')
-  console.error('Make sure .env.local exists and has:')
+  console.error('Make sure .env exists in the project root and has:')
   console.error('  NEXT_PUBLIC_SUPABASE_URL=...')
   console.error('  NEXT_PUBLIC_SUPABASE_ANON_KEY=...')
   process.exit(1)

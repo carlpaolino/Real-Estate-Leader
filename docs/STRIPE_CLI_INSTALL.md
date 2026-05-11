@@ -68,7 +68,7 @@ Once installed and logged in, you can forward webhooks to your local server:
 stripe listen --forward-to localhost:3000/api/stripe/webhook
 ```
 
-This will output a webhook signing secret (starts with `whsec_`). Add this to your `.env.local`:
+This will output a webhook signing secret (starts with `whsec_`). Add this to your `.env`:
 
 ```env
 STRIPE_WEBHOOK_SECRET=whsec_xxxxx
@@ -93,7 +93,7 @@ This allows macOS to run the binary without the security warning.
 ### If webhook forwarding doesn't work
 - Make sure your Next.js dev server is running on port 3000
 - Check that the webhook endpoint is accessible
-- Verify the webhook secret is correctly set in your `.env.local`
+- Verify the webhook secret is correctly set in your `.env`
 
 ## Quick Test
 

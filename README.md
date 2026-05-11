@@ -36,7 +36,7 @@ Leader is designed to:
    ```
 
 3. **Set up environment variables**
-   Create a `.env.local` file in the root directory:
+   Create a `.env` file in the root directory (you can start from `env.example`):
    ```env
    # Supabase
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
