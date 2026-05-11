@@ -10,6 +10,10 @@ import { Lead, LeadFilters as LeadFiltersType } from '@/types/lead'
 import { ensureUserProfile } from '@/lib/auth'
 import Link from 'next/link'
 
+export async function getServerSideProps() {
+  return { props: {} }
+}
+
 export default function Dashboard({ session }: { session: any }) {
   const supabase = useSupabase()
   const router = useRouter()
