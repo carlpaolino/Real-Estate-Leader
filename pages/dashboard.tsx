@@ -10,6 +10,27 @@ import { Lead, LeadFilters as LeadFiltersType } from '@/types/lead'
 import { ensureUserProfile } from '@/lib/auth'
 import Link from 'next/link'
 
+function getLeadDateRangeCutoff(dateRange: LeadFiltersType['dateRange']): Date | null {
+  if (dateRange === 'all') return null
+  const now = new Date()
+  if (dateRange === 'week') {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    d.setHours(0, 0, 0, 0)
+    const day = d.getDay()
+    const mondayOffset = day === 0 ? -6 : 1 - day
+    d.setDate(d.getDate() + mondayOffset)
+    return d
+  }
+  if (dateRange === 'month') {
+    return new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
+  }
+  if (dateRange === 'quarter') {
+    const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3
+    return new Date(now.getFullYear(), quarterStartMonth, 1, 0, 0, 0, 0)
+  }
+  return null
+}
+
 export async function getServerSideProps() {
   return { props: {} }
 }
@@ -61,10 +82,11 @@ export default function Dashboard({ session }: { session: any }) {
     router.push('/')
   }
 
+  const dateRangeCutoff = getLeadDateRangeCutoff(filters.dateRange)
   const filteredLeads = leads.filter(lead => {
     if (filters.status !== 'all' && lead.status !== filters.status) return false
+    if (dateRangeCutoff !== null && new Date(lead.created_at) < dateRangeCutoff) return false
     if (filters.score !== 'all') {
-      const score = parseInt(filters.score)
       if (filters.score === 'high' && lead.score < 80) return false
       if (filters.score === 'medium' && (lead.score < 60 || lead.score >= 80)) return false
       if (filters.score === 'low' && lead.score >= 60) return false
